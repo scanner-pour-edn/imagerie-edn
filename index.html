@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entraîne-toi à l'imagerie pour les EDN</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#14181b;--panel:#1d2326;--line:#323b3f;--text:#e6ecee;--mute:#92a0a5;--acc:#4fd1b0;--bad:#ff6b5e;--onacc:#06241d}
+html{scroll-padding-top:env(safe-area-inset-top,0px);color-scheme:dark}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;line-height:1.5}
+header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+h1{font-size:1.15rem;margin:0;font-weight:600}
+.score{color:var(--mute);font-size:.95rem}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding:20px;max-width:1100px;margin:0 auto}
+@media(max-width:820px){main{grid-template-columns:1fr;padding:12px}}
+.viewer{background:#000;border:1px solid var(--line);border-radius:8px;padding:10px}
+.tabs,.pre{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tabs button,.pre button{flex:1;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 8px;cursor:pointer;font:inherit;font-size:.9rem}
+.tabs button[aria-pressed=true],.pre button[aria-pressed=true]{background:var(--acc);color:var(--onacc);border-color:var(--acc);font-weight:600}
+canvas{display:block;width:100%;max-width:560px;height:auto;margin:0 auto;cursor:crosshair;touch-action:pan-y;background:#000}
+.sl{display:flex;align-items:center;gap:10px;margin-top:10px;color:var(--mute);font-size:.9rem}
+.sl label{width:66px}.sl input{flex:1;accent-color:var(--acc)}.sl output{width:48px;text-align:right}
+.win{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.wt{margin:0 0 10px;font-size:.95rem;font-weight:600;color:var(--text)}
+aside{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;align-self:start}
+aside h2{margin:0 0 4px;font-size:.95rem;color:var(--mute);font-weight:500}
+.target{font-size:1.6rem;font-weight:700;margin:0 0 12px}
+aside p{margin:0 0 14px;color:var(--mute);font-size:.95rem}
+.btn{display:block;width:100%;padding:11px;border-radius:6px;border:0;font:inherit;font-weight:600;cursor:pointer;background:var(--acc);color:var(--onacc);margin-bottom:8px}
+.btn:disabled{background:var(--line);color:var(--mute);cursor:not-allowed}
+.btn.alt{background:transparent;color:var(--text);border:1px solid var(--line)}
+.res{padding:10px 12px;border-radius:6px;margin-bottom:12px;border:1px solid var(--line)}
+.res.ok{border-color:var(--acc)}.res.ko{border-color:var(--bad)}
+.hidden,[hidden]{display:none!important}
+.home{max-width:1000px;margin:0 auto;padding:56px 20px 40px;text-align:center}
+.home h1{font-size:clamp(1.7rem,4.5vw,2.6rem);font-weight:700;line-height:1.2;margin:0 0 40px}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+@media(max-width:700px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.home{padding-top:36px}}
+.card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:200px;padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--text);text-decoration:none;font-size:1.15rem;font-weight:600;transition:border-color .15s,transform .15s}
+a.card:hover{border-color:var(--acc);transform:translateY(-2px)}
+.card svg{width:56px;height:56px;stroke:var(--acc);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card.soon{opacity:.55;cursor:not-allowed}
+.card.soon svg{stroke:var(--mute)}
+.badge{position:absolute;top:10px;right:10px;font-size:.72rem;font-weight:500;color:var(--mute);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.back{color:var(--mute);text-decoration:none;font-size:.95rem}.back:hover{color:var(--acc)}
+details{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;font-size:.9rem}
+summary{cursor:pointer;font-weight:600}
+details label{display:block;margin:10px 0 2px;color:var(--mute)}
+details input[type=file]{width:100%;color:var(--mute);font-size:.85rem}
+.note{font-size:.8rem;color:var(--mute);margin-top:10px}
+button:focus-visible,input:focus-visible,canvas:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="home" class="home">
+<h1>Entraîne-toi à l'imagerie pour les EDN</h1>
+<div class="cards">
+<a class="card" href="#scanner"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="24"/><circle cx="32" cy="32" r="10"/><path d="M32 8v6M32 50v6M8 32h6M50 32h6"/></svg>Scanner</a>
+<div class="card soon" aria-disabled="true"><span class="badge">Bientôt</span><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="14" width="52" height="36" rx="10"/><circle cx="32" cy="32" r="11"/><path d="M6 56h52"/></svg>IRM</div>
+<div class="card soon" aria-disabled="true"><span class="badge">Bientôt</span><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 8 8 52h48Z"/><path d="M20 38q12-8 24 0M26 46q6-4 12 0"/></svg>Échographie</div>
+<div class="card soon" aria-disabled="true"><span class="badge">Bientôt</span><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="6" width="40" height="52" rx="4"/><path d="M32 16v32M22 22h20M24 30h16M26 38h12"/></svg>Radio</div>
+</div>
+</div>
+<div id="app" hidden>
+<header><a class="back" href="#">← Accueil</a><h1>Entraînement au scanner</h1><div class="score" id="score">Score : 0 / 0</div></header>
+<main>
+<section class="viewer">
+<div class="tabs" role="group" aria-label="Plan de coupe">
+<button data-p="0" aria-pressed="true">Transversale</button>
+<button data-p="1" aria-pressed="false">Frontale</button>
+<button data-p="2" aria-pressed="false">Sagittale</button>
+</div>
+<canvas id="cv" width="560" height="560" tabindex="0" aria-label="Image de scanner"></canvas>
+<div class="sl"><label for="sl">Coupe</label><input type="range" id="sl" min="0" max="95" value="48"><output id="sn">48</output></div>
+<div class="win">
+<h2 class="wt">Fenêtrage</h2>
+<div class="pre" id="pre" role="group" aria-label="Fenêtrage"></div>
+<div class="sl"><label for="wl">Niveau</label><input type="range" id="wl" min="-1000" max="1000" step="5" value="40"><output id="wlo">40</output></div>
+<div class="sl"><label for="ww">Largeur</label><input type="range" id="ww" min="1" max="4000" step="5" value="400"><output id="wwo">400</output></div>
+</div>
+</section>
+<aside>
+<h2>Structure à pointer</h2>
+<div class="target" id="tg"></div>
+<p id="hint">Faites défiler les coupes (molette, curseur ou flèches), ajustez le fenêtrage, puis cliquez sur la structure. Pour les structures paires, la droite et la gauche sont celles du patient.</p>
+<div id="res" class="res hidden"></div>
+<button class="btn" id="val" disabled>Valider</button>
+<button class="btn alt hidden" id="nx">Question suivante</button>
+<details>
+<summary>Charger un vrai scanner</summary>
+<label for="fct">Scanner (.nii ou .nii.gz)</label>
+<input type="file" id="fct" accept=".nii,.gz">
+<label for="fm">Masques de segmentation (un fichier par structure, ex. liver.nii.gz)</label>
+<input type="file" id="fm" accept=".nii,.gz" multiple>
+<button class="btn alt" id="ld" style="margin-top:12px">Charger</button>
+<button class="btn alt hidden" id="demo">Revenir aux cas d’entraînement</button>
+<div class="note" id="st"></div>
+<div class="note">Les fichiers sont lus dans votre navigateur et ne sont envoyés nulle part. Utilisez uniquement des données anonymisées. Les masques doivent avoir la même grille que le scanner (c'est le cas des sorties de TotalSegmentator).</div>
+</details>
+<div class="note" id="src">Chargement…</div>
+</aside>
+</main>
+</div>
+<script>
+const CASES=[];
+const FR={liver:"Foie",spleen:"Rate",kidney_right:"Rein droit",kidney_left:"Rein gauche",gallbladder:"Vésicule biliaire",stomach:"Estomac",pancreas:"Pancréas",aorta:"Aorte",inferior_vena_cava:"Veine cave inférieure",portal_vein_and_splenic_vein:"Veine porte et splénique",adrenal_gland_right:"Surrénale droite",adrenal_gland_left:"Surrénale gauche",heart:"Cœur",esophagus:"Œsophage",trachea:"Trachée",urinary_bladder:"Vessie",prostate:"Prostate",brain:"Cerveau",spinal_cord:"Moelle spinale",colon:"Côlon",duodenum:"Duodénum",small_bowel:"Intestin grêle",sternum:"Sternum",femur_left:"Fémur gauche",femur_right:"Fémur droit",lung_left:"Poumon gauche",lung_right:"Poumon droit",pulmonary_artery:"Artère pulmonaire",thyroid_gland:"Thyroïde",skull:"Crâne",autochthon_left:"Muscle érecteur du rachis gauche",autochthon_right:"Muscle érecteur du rachis droit",iliopsoas_left:"Psoas gauche",iliopsoas_right:"Psoas droit"};
+const PRE={"Parties molles":[40,400],"Poumon":[-600,1500],"Os":[400,1800],"Foie":[60,160],"Cerveau":[40,80]};
+let D,SP,V,L,structs,cen,pa,wl=40,ww=400,plane=0,sl=0,ptr=null,target=0,revealed=false,ok=0,tot=0;
+const $=id=>document.getElementById(id),cv=$("cv"),g=cv.getContext("2d"),off=document.createElement("canvas"),og=off.getContext("2d");
+const PA=[[0,1,2],[0,2,1],[1,2,0]];
+const NAMES={1:"Surrénale",2:"Aorte",3:"Vessie",4:"Cerveau",5:"Cœur",6:"Rein",7:"Foie",8:"Pancréas",9:"Rate",10:"Thyroïde",11:"Veine cave inférieure",12:"Poumon",14:"Clavicule",15:"Fémur",16:"Péroné",17:"Humérus",21:"Bassin",24:"Cage thoracique",25:"Scapula",26:"Crâne",27:"Rachis",28:"Sternum",30:"Tibia",36:"Muscle psoas"};
+const PAIRED=[1,6,12,14,15,16,17,25,30,36],FEM=[1,14,25];
+const HU0={0:-1000,1:60,2:170,3:15,4:35,5:50,6:150,7:100,8:80,9:110,10:90,11:130,12:-820,33:55,34:-100,35:-100,36:55,37:25};
+const LUT=new Int16Array(256);for(let q=0;q<256;q++){const b=q>40?q-40:q;LUT[q]=b in HU0?HU0[b]:b==26?700:(b==27||b==21)?500:350}
+let curCase=-1,custom=false;
+async function b64gz(b){const bin=Uint8Array.from(atob(b),c=>c.charCodeAt(0));return new Uint8Array(await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer())}
+const frName=b=>FR[b]||b.replace(/_left$/,"_gauche").replace(/_right$/,"_droit").replace(/_/g," ");
+/* ---- Cas réels (dossier cases/, générés par build_real_cases.py) ---- */
+async function useReal(i){const c=CASES[i];$("tg").textContent="Chargement…";
+if(!c.ct){const r=await fetch(c.u);if(!r.ok)throw new Error("cas introuvable : "+c.u);Object.assign(c,await r.json())}
+const v=new Int16Array((await b64gz(c.ct)).buffer),l=await b64gz(c.b),cnt=new Uint32Array(256);
+for(let k=0;k<l.length;k++)cnt[l[k]]++;
+const st=c.s.filter(([id])=>cnt[id]>=40).map(([id,b])=>({id,name:frName(b)}));
+applyData(c.d,c.sp,v,l,st,"Cas réel n° "+c.n+" (TotalSegmentator, CC BY 4.0 — Wasserthal et al.)");curCase=i}
+async function useCase(i){const c=CASES[i];if(c.u||c.ct){await useReal(i);return}$("tg").textContent="Chargement…";const l=await b64gz(c.b),v=new Int16Array(l.length),cnt=new Uint32Array(256);
+for(let k=0;k<l.length;k++){const q=l[k];cnt[q]++;v[k]=LUT[q]+(q?(Math.imul(k,2654435761)>>>28)-8:0)}
+const st=[];for(let q=1;q<=76;q++){const b=q>40?q-40:q;if(NAMES[b]&&cnt[q]>=40)st.push({id:q,name:NAMES[b]+(PAIRED.includes(b)?(q>40?(FEM.includes(b)?" gauche":" gauche"):(FEM.includes(b)?" droite":" droit")):"")})}
+applyData(c.d,c.sp,v,l,st,"Cas intégré n° "+c.n+" : anatomie réelle (segmentation d'un scanner corps entier), densités simulées.");curCase=i}
+function applyData(d,sp,v,l,st,src){
+D=d;SP=sp;V=v;L=l;structs=st;$("src").textContent=src;
+const a=new Float64Array(1024);for(let k=0;k<l.length;k++){const q=l[k];if(q){const x=k%d[0],y=((k/d[0])|0)%d[1],z=(k/(d[0]*d[1]))|0;a[q*4]+=x;a[q*4+1]+=y;a[q*4+2]+=z;a[q*4+3]++}}
+cen={};for(const s of st){const n=a[s.id*4+3]||1;cen[s.id]=[a[s.id*4]/n,a[s.id*4+1]/n,a[s.id*4+2]/n].map(Math.round)}}
+function setData(...a){applyData(...a);custom=true;newQ()}
+function dim(){const[a,b,c]=pa=PA[plane];const di=D[a],dj=D[b],wi=di*SP[a],hj=dj*SP[b],m=Math.max(wi,hj);
+off.width=di;off.height=dj;cv.width=Math.round(560*wi/m);cv.height=Math.round(560*hj/m)}
+function draw(){
+const[a,b,c]=pa,di=D[a],dj=D[b],img=og.createImageData(di,dj),lo=wl-ww/2,sc=255/ww,t=revealed?target:-1,cc=[0,0,0];
+for(let j=0;j<dj;j++)for(let i=0;i<di;i++){cc[a]=i;cc[b]=j;cc[c]=sl;const k=cc[0]+D[0]*(cc[1]+D[1]*cc[2]);
+let v=(V[k]-lo)*sc;v=v<0?0:v>255?255:v;let r=v,gg=v,bl=v;if(L[k]==t){r=r*.4;gg=gg*.4+150;bl=bl*.4+110}
+const o=(j*di+i)*4;img.data[o]=r;img.data[o+1]=gg;img.data[o+2]=bl;img.data[o+3]=255}
+og.putImageData(img,0,0);g.imageSmoothingEnabled=true;g.drawImage(off,0,0,cv.width,cv.height);
+if(ptr&&ptr[c]==sl){const px=(ptr[a]+.5)*cv.width/di,py=(ptr[b]+.5)*cv.height/dj;
+g.strokeStyle=revealed&&!ptr.ok?"#ff6b5e":"#ffd34f";g.lineWidth=2;g.beginPath();g.arc(px,py,9,0,7);g.moveTo(px-15,py);g.lineTo(px+15,py);g.moveTo(px,py-15);g.lineTo(px,py+15);g.stroke()}
+$("sl").max=D[c]-1;$("sl").value=sl;$("sn").textContent=sl}
+function setSlice(v){sl=Math.max(0,Math.min(D[pa[2]]-1,v));draw()}
+function setPlane(p,s){plane=p;dim();sl=s??Math.round(D[pa[2]]/2);document.querySelectorAll(".tabs button").forEach((x,n)=>x.setAttribute("aria-pressed",n==p));draw()}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setPlane(+b.dataset.p));
+$("sl").oninput=e=>setSlice(+e.target.value);
+cv.addEventListener("wheel",e=>{e.preventDefault();setSlice(sl+(e.deltaY>0?1:-1))},{passive:false});
+cv.addEventListener("keydown",e=>{if(e.key=="ArrowUp"||e.key=="ArrowRight")setSlice(sl+1);if(e.key=="ArrowDown"||e.key=="ArrowLeft")setSlice(sl-1)});
+cv.addEventListener("click",e=>{if(revealed)return;const r=cv.getBoundingClientRect(),[a,b,c]=pa;
+const p=[0,0,0];p[a]=Math.min(D[a]-1,Math.floor((e.clientX-r.left)/r.width*D[a]));p[b]=Math.min(D[b]-1,Math.floor((e.clientY-r.top)/r.height*D[b]));p[c]=sl;
+ptr=p;$("val").disabled=false;draw()});
+function setWin(l,w){wl=l;ww=w;$("wl").value=l;$("ww").value=w;$("wlo").textContent=l;$("wwo").textContent=w;
+document.querySelectorAll("#pre button").forEach(x=>x.setAttribute("aria-pressed",PRE[x.textContent][0]==l&&PRE[x.textContent][1]==w));if(V)draw()}
+for(const n in PRE){const b=document.createElement("button");b.textContent=n;b.onclick=()=>setWin(...PRE[n]);$("pre").appendChild(b)}
+$("wl").oninput=e=>setWin(+e.target.value,ww);$("ww").oninput=e=>setWin(wl,+e.target.value);
+const cap=s=>s[0].toUpperCase()+s.slice(1),nm=id=>structs.find(s=>s.id==id)?.name||"";
+async function newQ(){if(!custom){await READY;const n=CASES.length;if(!n){$("tg").textContent="Aucun cas disponible";$("src").textContent="Ajoutez le dossier cases/ (voir build_real_cases.py) ou chargez un scanner dans le panneau ci-dessous.";return}let i;do{i=Math.floor(Math.random()*n)}while(i==curCase&&n>1);await useCase(i)}
+let t;do{t=structs[Math.floor(Math.random()*structs.length)].id}while(t==target&&structs.length>1);
+target=t;ptr=null;revealed=false;$("tg").textContent=cap(nm(t));$("res").className="res hidden";$("val").disabled=true;
+$("val").classList.remove("hidden");$("nx").classList.add("hidden");$("hint").classList.remove("hidden");setPlane(0);setWin(wl,ww)}
+$("val").onclick=()=>{if(!ptr)return;revealed=true;tot++;const l=L[ptr[0]+D[0]*(ptr[1]+D[1]*ptr[2])];ptr.ok=l==target;if(ptr.ok)ok++;
+const r=$("res");r.className="res "+(ptr.ok?"ok":"ko");
+r.textContent=ptr.ok?"Correct : vous avez bien pointé « "+nm(target).toLowerCase()+" ».":"Raté : vous avez pointé « "+(nm(l)||"aucune structure segmentée").toLowerCase()+" ». La structure attendue est surlignée en vert sur toutes les coupes.";
+$("score").textContent="Score : "+ok+" / "+tot;const c=cen[target];
+$("val").classList.add("hidden");$("nx").classList.remove("hidden");$("hint").classList.add("hidden");setPlane(plane,c[PA[plane][2]])};
+$("nx").onclick=newQ;
+/* ---- Lecture NIfTI ---- */
+async function readNii(f){let buf=await f.arrayBuffer();const u=new Uint8Array(buf);
+if(u[0]==0x1f&&u[1]==0x8b)buf=await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+const dv=new DataView(buf);if(dv.getInt32(0,true)!=348)throw new Error(f.name+" : format NIfTI-1 little-endian requis.");
+const dim=[1,2,3].map(i=>dv.getInt16(40+2*i,true)),dt=dv.getInt16(70,true),pd=[1,2,3].map(i=>dv.getFloat32(76+4*i,true)),off=Math.round(dv.getFloat32(108,true));
+let sg=dv.getFloat32(112,true),it=dv.getFloat32(116,true);if(!sg||isNaN(sg))sg=1;if(isNaN(it))it=0;
+const M=dv.getInt16(254,true)>0?[0,1,2].map(r=>[0,1,2].map(c=>dv.getFloat32(280+16*r+4*c,true))):[[1,0,0],[0,1,0],[0,0,1]];
+const n=dim[0]*dim[1]*dim[2],T={2:[Uint8Array,1],4:[Int16Array,2],8:[Int32Array,4],16:[Float32Array,4],64:[Float64Array,8],512:[Uint16Array,2]}[dt];
+if(!T)throw new Error(f.name+" : type de données "+dt+" non pris en charge.");
+const raw=new T[0](buf.slice(off,off+n*T[1]));
+const ax=[0,0,0],fl=[0,0,0],sp=[1,1,1];
+for(let a=0;a<3;a++){let w=0;for(let r=1;r<3;r++)if(Math.abs(M[r][a])>Math.abs(M[w][a]))w=r;ax[w]=a;fl[w]=M[w][a]>0;sp[w]=Math.abs(pd[a])||1}
+const d=[dim[ax[0]],dim[ax[1]],dim[ax[2]]],st=[1,dim[0],dim[0]*dim[1]],o=[0,1,2].map(w=>{const t=new Int32Array(d[w]);for(let c=0;c<d[w];c++)t[c]=(fl[w]?d[w]-1-c:c)*st[ax[w]];return t});
+return{d,sp,sg,it,get:(C)=>{const out=new C(n);let k=0;for(let z=0;z<d[2];z++)for(let y=0;y<d[1];y++){const b=o[1][y]+o[2][z];for(let x=0;x<d[0];x++)out[k++]=raw[o[0][x]+b]*(C==Int16Array?sg:1)+(C==Int16Array?it:0)}return out}}}
+$("ld").onclick=async()=>{const ct=$("fct").files[0],ms=[...$("fm").files],st=$("st");
+if(!ct||!ms.length){st.textContent="Choisissez un scanner et au moins un masque.";return}
+try{st.textContent="Lecture du scanner…";const c=await readNii(ct),v=c.get(Int16Array),l=new Uint8Array(v.length),S=[];
+let id=0;for(const f of ms){if(id>=255)break;st.textContent="Lecture de "+f.name+"…";const m=await readNii(f);
+if(m.d.join()!=c.d.join()){st.textContent="Masque ignoré (grille différente) : "+f.name;continue}
+const a=m.get(Uint8Array);let any=false;id++;for(let k=0;k<a.length;k++)if(a[k]>0){l[k]=id;any=true}
+if(!any){id--;continue}const base=f.name.replace(/\.nii(\.gz)?$/i,"").replace(/\.gz$/i,"");
+S.push({id,name:FR[base]||base.replace(/_left$/,"_gauche").replace(/_right$/,"_droit").replace(/_/g," ")})}
+if(!S.length)throw new Error("Aucun masque exploitable.");
+setData(c.d,c.sp,v,l,S,"Scanner chargé : "+ct.name+" ("+S.length+" structures).");st.textContent="Chargé : "+S.length+" structures.";$("demo").classList.remove("hidden")}
+catch(e){st.textContent="Erreur : "+e.message}};
+$("demo").onclick=()=>{custom=false;newQ();$("demo").classList.add("hidden");$("st").textContent=""};
+const READY=fetch("cases/index.json").then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))CASES.push(...a)}).catch(()=>{});
+let started=false;
+function route(){const s=location.hash=="#scanner";$("home").hidden=s;$("app").hidden=!s;window.scrollTo(0,0);if(s&&!started){started=true;newQ()}}
+addEventListener("hashchange",route);route();
+</script>
+</body>
+</html>
